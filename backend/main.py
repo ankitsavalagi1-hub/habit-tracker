@@ -11,10 +11,17 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="AI Habit Tracker API", version="1.0.0")
+
+# Create database tables on startup
+@app.on_event("startup")
+def create_tables():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        # Don't crash the app - tables might already exist
 
 # CORS middleware - allow multiple origins from environment
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")

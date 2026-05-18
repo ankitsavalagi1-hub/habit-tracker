@@ -14,14 +14,33 @@ load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./habits.db")
 
 # Configure engine based on database type
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+try:
+    if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+        engine = create_engine(
+            SQLALCHEMY_DATABASE_URL, 
+            connect_args={"check_same_thread": False}
+        )
+    else:
+        # For PostgreSQL (Supabase) - add SSL configuration
+        # Supabase requires SSL connections
+        engine = create_engine(
+            SQLALCHEMY_DATABASE_URL,
+            connect_args={"sslmode": "require"}
+        )
+    
+    # Test connection
+    with engine.connect() as conn:
+        print("Database connection successful")
+        
+except Exception as e:
+    print(f"Database connection error: {e}")
+    # Fallback to SQLite if production database fails
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./habits.db"
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, 
         connect_args={"check_same_thread": False}
     )
-else:
-    # For PostgreSQL and other databases
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    print("Falling back to SQLite database")
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
